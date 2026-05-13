@@ -140,6 +140,30 @@
       animation: digitThud 0.55s cubic-bezier(.36,.07,.19,.97) both;
     }
 
+    /* ── "fuck you quan" slam-in ── */
+    .fyq {
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: #111;
+      margin-top: 28px;
+      letter-spacing: 0.02em;
+      opacity: 0;
+      transform: scale(3);
+    }
+
+    @keyframes textSlam {
+      0%   { opacity: 0; transform: scale(3.5);   color: #e00; }
+      18%  { opacity: 1; transform: scale(0.85);  color: #e00; }
+      32%  { transform: scale(1.12); }
+      48%  { transform: scale(0.95); }
+      62%  { transform: scale(1.04); }
+      100% { opacity: 1; transform: scale(1);     color: #111; }
+    }
+
+    .fyq.slam {
+      animation: textSlam 0.6s cubic-bezier(.22,1,.36,1) forwards;
+    }
+
     /* ── Emoji particles ── */
     .emoji-particle {
       position: fixed;
@@ -167,13 +191,14 @@
         <div class="digit">1</div>
       </div>
     </div>
-    <div style="font-size:1.4rem; font-weight:900; color:#111; margin-top:28px; letter-spacing:0.02em;">fuck you quan</div>
+    <div class="fyq" id="fyq">fuck you quan</div>
   </div>
 
   <script>
     const reel     = document.getElementById('reel');
     const reelWrap = document.getElementById('reelWrap');
     const card     = document.getElementById('card');
+    const fyq      = document.getElementById('fyq');
 
     function attempt(cls, delay, nextFn, impactDelay) {
       setTimeout(() => {
@@ -204,6 +229,11 @@
       void reelWrap.offsetWidth;
       reelWrap.classList.add('thud');
       reelWrap.addEventListener('animationend', () => reelWrap.classList.remove('thud'), { once: true });
+
+      // slam in the text slightly after the counter thud
+      setTimeout(() => {
+        fyq.classList.add('slam');
+      }, 180);
 
       // flood emojis
       floodEmojis();
