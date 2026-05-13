@@ -14,6 +14,7 @@
       justify-content: center;
       background: #f0f0f0;
       font-family: Arial, Helvetica, sans-serif;
+      overflow: hidden;
     }
 
     .card {
@@ -35,7 +36,6 @@
       margin-bottom: 32px;
     }
 
-    /* Slot-reel container — clips to show exactly one digit */
     .reel-wrap {
       display: inline-block;
       overflow: hidden;
@@ -62,53 +62,59 @@
       justify-content: center;
     }
 
-    /*
-      3 attempts, each more strained than the last.
-      translateY(-100%) would fully show the "1".
-      We get agonisingly close but always snap back.
-    */
     @keyframes attempt1 {
-      0%           { transform: translateY(0); }
-      18%          { transform: translateY(-91%); }   /* SO close */
-      28%          { transform: translateY(-94%); }   /* straining... */
-      38%          { transform: translateY(-91%); }
-      50%          { transform: translateY(4%); }     /* SNAP back, overshoot */
-      62%          { transform: translateY(-2%); }
-      70%          { transform: translateY(1%); }
-      100%         { transform: translateY(0); }
+      0%   { transform: translateY(0); }
+      18%  { transform: translateY(-91%); }
+      28%  { transform: translateY(-94%); }
+      38%  { transform: translateY(-91%); }
+      50%  { transform: translateY(4%); }
+      62%  { transform: translateY(-2%); }
+      70%  { transform: translateY(1%); }
+      100% { transform: translateY(0); }
     }
 
     @keyframes attempt2 {
-      0%           { transform: translateY(0); }
-      15%          { transform: translateY(-96%); }   /* EVEN closer */
-      28%          { transform: translateY(-98%); }   /* trembling */
-      32%          { transform: translateY(-96%); }
-      42%          { transform: translateY(6%); }     /* SNAP, bigger overshoot */
-      56%          { transform: translateY(-3%); }
-      68%          { transform: translateY(1%); }
-      100%         { transform: translateY(0); }
+      0%   { transform: translateY(0); }
+      15%  { transform: translateY(-96%); }
+      28%  { transform: translateY(-98%); }
+      32%  { transform: translateY(-96%); }
+      42%  { transform: translateY(6%); }
+      56%  { transform: translateY(-3%); }
+      68%  { transform: translateY(1%); }
+      100% { transform: translateY(0); }
     }
 
     @keyframes attempt3 {
-      0%    { transform: translateY(0); }
-      22%   { transform: translateY(-100%); }  /* actually hits 1 */
-      48%   { transform: translateY(-100%); }  /* holds there, taunting */
-      60%   { transform: translateY(12%); }    /* catastrophic snap */
-      72%   { transform: translateY(-6%); }
-      82%   { transform: translateY(3%); }
-      91%   { transform: translateY(-1%); }
-      100%  { transform: translateY(0); }
+      0%   { transform: translateY(0); }
+      22%  { transform: translateY(-100%); }
+      48%  { transform: translateY(-100%); }
+      60%  { transform: translateY(12%); }
+      72%  { transform: translateY(-6%); }
+      82%  { transform: translateY(3%); }
+      91%  { transform: translateY(-1%); }
+      100% { transform: translateY(0); }
     }
 
     .reel.go1 { animation: attempt1 0.9s cubic-bezier(.25,.1,.25,1) both; }
     .reel.go2 { animation: attempt2 1.0s cubic-bezier(.25,.1,.25,1) both; }
     .reel.go3 { animation: attempt3 1.8s cubic-bezier(.25,.1,.25,1) both; }
 
-    #fireworks {
+    /* Floating emoji particles */
+    .emoji-particle {
       position: fixed;
-      inset: 0;
       pointer-events: none;
       z-index: 999;
+      user-select: none;
+      animation: floatUp var(--dur) ease-out forwards;
+      font-size: var(--size);
+      left: var(--x);
+      top: var(--y);
+      transform-origin: center;
+    }
+
+    @keyframes floatUp {
+      0%   { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); }
+      100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(var(--scale)); }
     }
   </style>
 </head>
@@ -138,109 +144,45 @@
       }, delay);
     }
 
-    // Three increasingly desperate attempts, last one triggers fireworks
     attempt('go1', 600, () =>
       attempt('go2', 700, () =>
-        attempt('go3', 800, launchFireworks)
+        attempt('go3', 800, floodEmojis)
       )
     );
 
-    // ── Fireworks ────────────────────────────────────────────────────────────
-    function launchFireworks() {
-      const canvas = document.getElementById('fireworks');
-      const ctx = canvas.getContext('2d');
+    function floodEmojis() {
+      const EMOJIS = ['🎆','🎇','✨','⭐','🌟','💥','🎉','🎊','🌠','💫','🔥','🥳','👏','🎈','🪅'];
+      const TOTAL  = 120;
+      const W = window.innerWidth;
+      const H = window.innerHeight;
 
-      function resize() {
-        canvas.width  = window.innerWidth;
-        canvas.height = window.innerHeight;
-      }
-      resize();
-      window.addEventListener('resize', resize);
-
-      const COLORS = ['#ff3333','#ff9900','#ffee00','#33ff66','#33aaff','#cc44ff','#ff66cc','#ffffff'];
-      const particles = [];
-
-      function burst(x, y) {
-        const count = 90 + Math.random() * 60 | 0;
-        const hue = COLORS[Math.random() * COLORS.length | 0];
-        for (let i = 0; i < count; i++) {
-          const angle = (Math.PI * 2 / count) * i + Math.random() * 0.3;
-          const speed = 3 + Math.random() * 7;
-          particles.push({
-            x, y,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            alpha: 1,
-            color: Math.random() < 0.3 ? '#ffffff' : hue,
-            radius: 2 + Math.random() * 2.5,
-            decay: 0.012 + Math.random() * 0.01,
-            gravity: 0.12 + Math.random() * 0.08,
-            trail: []
-          });
-        }
-      }
-
-      // Schedule 10 bursts across the viewport
-      const burstTimes = [0, 120, 250, 380, 480, 600, 720, 850, 1000, 1200];
-      burstTimes.forEach((t, i) => {
+      for (let i = 0; i < TOTAL; i++) {
         setTimeout(() => {
-          const x = 0.15 * canvas.width + Math.random() * 0.7 * canvas.width;
-          const y = 0.1  * canvas.height + Math.random() * 0.55 * canvas.height;
-          burst(x, y);
-          if (i % 3 === 0) burst(x + (Math.random()-0.5)*120, y + (Math.random()-0.5)*80);
-        }, t);
-      });
+          const el = document.createElement('span');
+          el.className = 'emoji-particle';
+          el.textContent = EMOJIS[Math.random() * EMOJIS.length | 0];
 
-      let raf;
-      function draw() {
-        ctx.fillStyle = 'rgba(0,0,0,0.18)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+          const startX = Math.random() * W;
+          const startY = Math.random() * H;
+          const dx     = (Math.random() - 0.5) * 300;
+          const dy     = -100 - Math.random() * 400;
+          const rot    = (Math.random() - 0.5) * 720;
+          const dur    = 1.2 + Math.random() * 1.8;
+          const size   = 1.5 + Math.random() * 3;
+          const scale  = 0.2 + Math.random() * 1.2;
 
-        for (let i = particles.length - 1; i >= 0; i--) {
-          const p = particles[i];
-          p.trail.push([p.x, p.y]);
-          if (p.trail.length > 6) p.trail.shift();
+          el.style.cssText = `
+            --x: ${startX}px; --y: ${startY}px;
+            --dx: ${dx}px;    --dy: ${dy}px;
+            --rot: ${rot}deg; --dur: ${dur}s;
+            --size: ${size}rem; --scale: ${scale};
+          `;
 
-          p.x  += p.vx;
-          p.y  += p.vy;
-          p.vy += p.gravity;
-          p.vx *= 0.98;
-          p.alpha -= p.decay;
-
-          if (p.alpha <= 0) { particles.splice(i, 1); continue; }
-
-          // trail
-          for (let t = 0; t < p.trail.length; t++) {
-            const ta = (t / p.trail.length) * p.alpha * 0.4;
-            ctx.beginPath();
-            ctx.arc(p.trail[t][0], p.trail[t][1], p.radius * 0.6, 0, Math.PI * 2);
-            ctx.fillStyle = p.color.replace(')', `,${ta})`).replace('rgb(', 'rgba(').replace(/^#/, () => {
-              const n = parseInt(p.color.slice(1), 16);
-              return `rgba(${n>>16},${(n>>8)&255},${n&255},`;
-            }) + (p.color.startsWith('#') ? ')' : '');
-            // simpler: just use globalAlpha
-            ctx.globalAlpha = ta;
-            ctx.fillStyle = p.color;
-            ctx.fill();
-          }
-
-          ctx.globalAlpha = p.alpha;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-          ctx.fillStyle = p.color;
-          ctx.fill();
-          ctx.globalAlpha = 1;
-        }
-
-        if (particles.length > 0) {
-          raf = requestAnimationFrame(draw);
-        } else {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
+          document.body.appendChild(el);
+          el.addEventListener('animationend', () => el.remove());
+        }, Math.random() * 1200);
       }
-      draw();
     }
   </script>
-  <canvas id="fireworks"></canvas>
 </body>
 </html>
