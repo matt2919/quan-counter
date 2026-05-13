@@ -199,6 +199,8 @@
     const reelWrap = document.getElementById('reelWrap');
     const card     = document.getElementById('card');
     const fyq      = document.getElementById('fyq');
+    const MESSAGES = ['fuck you quan', 'quan gets pegged lmao', 'quan is 27'];
+    fyq.textContent = MESSAGES[Math.random() * MESSAGES.length | 0];
 
     function attempt(cls, delay, nextFn, impactDelay) {
       setTimeout(() => {
