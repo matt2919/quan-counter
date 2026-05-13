@@ -35,111 +35,109 @@
       margin-bottom: 32px;
     }
 
-    .counter {
+    /* Slot-reel container — clips to show exactly one digit */
+    .reel-wrap {
+      display: inline-block;
+      overflow: hidden;
+      height: 1.05em;
+      vertical-align: middle;
+      line-height: 1;
+    }
+
+    .reel {
+      display: flex;
+      flex-direction: column;
+      /* default: sitting on 0 */
+      transform: translateY(0);
+    }
+
+    .digit {
       font-size: 9rem;
       font-weight: 900;
       color: #e00;
       line-height: 1;
-      display: inline-block;
-      min-width: 3ch;
-      transition: transform 0.05s;
-      will-change: transform;
+      height: 1em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .counter.shake {
-      animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+    /*
+      3 attempts, each more strained than the last.
+      translateY(-100%) would fully show the "1".
+      We get agonisingly close but always snap back.
+    */
+    @keyframes attempt1 {
+      0%           { transform: translateY(0); }
+      18%          { transform: translateY(-91%); }   /* SO close */
+      28%          { transform: translateY(-94%); }   /* straining... */
+      38%          { transform: translateY(-91%); }
+      50%          { transform: translateY(4%); }     /* SNAP back, overshoot */
+      62%          { transform: translateY(-2%); }
+      70%          { transform: translateY(1%); }
+      100%         { transform: translateY(0); }
     }
 
-    .counter.crash {
-      animation: crash 0.6s cubic-bezier(.22,1,.36,1) both;
+    @keyframes attempt2 {
+      0%           { transform: translateY(0); }
+      15%          { transform: translateY(-96%); }   /* EVEN closer */
+      28%          { transform: translateY(-98%); }   /* trembling */
+      32%          { transform: translateY(-96%); }
+      42%          { transform: translateY(6%); }     /* SNAP, bigger overshoot */
+      56%          { transform: translateY(-3%); }
+      68%          { transform: translateY(1%); }
+      100%         { transform: translateY(0); }
     }
 
-    @keyframes shake {
-      10%, 90% { transform: translateX(-4px) rotate(-1deg); }
-      20%, 80% { transform: translateX(8px) rotate(1deg); }
-      30%, 50%, 70% { transform: translateX(-8px) rotate(-1deg); }
-      40%, 60% { transform: translateX(8px) rotate(1deg); }
+    @keyframes attempt3 {
+      0%           { transform: translateY(0); }
+      12%          { transform: translateY(-99.5%); } /* SO CLOSE it hurts */
+      22%          { transform: translateY(-99.8%); } /* basically there */
+      28%          { transform: translateY(-99.5%); }
+      36%          { transform: translateY(8%); }     /* catastrophic snap */
+      50%          { transform: translateY(-4%); }
+      62%          { transform: translateY(2%); }
+      74%          { transform: translateY(-1%); }
+      100%         { transform: translateY(0); }
     }
 
-    @keyframes crash {
-      0%   { transform: scale(4) translateY(-40px); opacity: 0; color: #ff0; text-shadow: 0 0 40px #f00; }
-      40%  { transform: scale(1.3) translateY(0); opacity: 1; color: #e00; text-shadow: 0 0 20px #f00; }
-      60%  { transform: scale(0.9); }
-      80%  { transform: scale(1.05); }
-      100% { transform: scale(1); color: #e00; text-shadow: none; }
-    }
-
-    @keyframes flash-bg {
-      0%   { background: #fff; }
-      15%  { background: #ffe0e0; }
-      35%  { background: #fff0f0; }
-      100% { background: #fff; }
-    }
-
-    .card.flash {
-      animation: flash-bg 0.8s ease both;
-    }
+    .reel.go1 { animation: attempt1 0.9s cubic-bezier(.25,.1,.25,1) both; }
+    .reel.go2 { animation: attempt2 1.0s cubic-bezier(.25,.1,.25,1) both; }
+    .reel.go3 { animation: attempt3 1.2s cubic-bezier(.25,.1,.25,1) both; }
   </style>
 </head>
 <body>
-  <div class="card" id="card">
+  <div class="card">
     <div class="label">Days Quan hasn't<br>mentioned his GF:</div>
-    <div class="counter" id="counter">0</div>
+    <div class="reel-wrap">
+      <div class="reel" id="reel">
+        <div class="digit">0</div>
+        <div class="digit">1</div>
+      </div>
+    </div>
   </div>
 
   <script>
-    const el = document.getElementById('counter');
-    const card = document.getElementById('card');
+    const reel = document.getElementById('reel');
 
-    function setNum(n) { el.textContent = n; }
-
-    function runDrama() {
-      // Phase 1: rapid-fire chaos — fly through random big numbers
-      const chaos = [347, 12, 891, 56, 1204, 3, 999, 421, 77, 650, 2, 888, 11];
-      let i = 0;
-      const chaosInterval = setInterval(() => {
-        el.classList.add('shake');
-        setNum(chaos[i % chaos.length]);
-        setTimeout(() => el.classList.remove('shake'), 80);
-        i++;
-        if (i >= chaos.length) {
-          clearInterval(chaosInterval);
-          // Phase 2: dramatic countdown 5..4..3..2..1..0
-          countdown();
-        }
-      }, 80);
+    function attempt(cls, delay, nextFn) {
+      setTimeout(() => {
+        reel.classList.remove('go1','go2','go3');
+        void reel.offsetWidth;
+        reel.classList.add(cls);
+        reel.addEventListener('animationend', () => {
+          reel.classList.remove(cls);
+          if (nextFn) nextFn();
+        }, { once: true });
+      }, delay);
     }
 
-    function countdown() {
-      let n = 5;
-      setNum(n);
-      const cd = setInterval(() => {
-        n--;
-        setNum(n);
-        el.style.transform = 'scale(1.15)';
-        setTimeout(() => el.style.transform = '', 120);
-        if (n <= 0) {
-          clearInterval(cd);
-          // Phase 3: crash landing on 0
-          setTimeout(crashLand, 200);
-        }
-      }, 300);
-    }
-
-    function crashLand() {
-      setNum(0);
-      el.classList.remove('shake');
-      void el.offsetWidth; // reflow
-      el.classList.add('crash');
-      card.classList.add('flash');
-      el.addEventListener('animationend', () => {
-        el.classList.remove('crash');
-        card.classList.remove('flash');
-      }, { once: true });
-    }
-
-    // Small delay so the page renders before the show starts
-    setTimeout(runDrama, 400);
+    // Three increasingly desperate attempts, then give up
+    attempt('go1', 600, () =>
+      attempt('go2', 700, () =>
+        attempt('go3', 800, null)
+      )
+    );
   </script>
 </body>
 </html>
